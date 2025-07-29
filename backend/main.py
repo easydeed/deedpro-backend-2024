@@ -1387,3 +1387,20 @@ async def generate_deed(deed: DeedData):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000) 
+# Widget Add-on Endpoints
+
+@app.get("/check-widget-access")
+async def check_widget_access(user_id: str = Depends(get_current_user_id)):
+    with conn.cursor() as cur:
+        cur.execute("SELECT widget_addon FROM users WHERE id = %s", (user_id,))
+        addon = cur.fetchone()[0]
+        if addon:
+            return {"access": True}
+        raise HTTPException(403, "No access - upgrade")
+
+@app.post("/admin/toggle-addon")
+async def toggle_addon(data: dict = Body(...), admin: str = Depends(get_current_admin)):
+    with conn.cursor() as cur:
+        cur.execute("UPDATE users SET widget_addon = %s WHERE id = %s", (data['enabled'], data['user_id']))
+        conn.commit()
+    return {"status": "updated"}
